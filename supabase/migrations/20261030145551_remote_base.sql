@@ -1,0 +1,2 @@
+-- Placeholder: migration gốc của routine aptis-vocab (đã chạy trên DB thật từ repo routine).
+-- File rỗng ở đây chỉ để lịch sử migration local khớp remote; local dev dùng shim 00000000000001 thay thế.

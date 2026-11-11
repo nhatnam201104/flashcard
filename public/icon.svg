@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect x="8" y="24" width="112" height="80" rx="12" fill="#171717" stroke="#3f3f46" stroke-width="3"/>
+  <rect x="20" y="34" width="88" height="60" rx="8" fill="#fafafa"/>
+  <text x="64" y="66" font-family="Georgia, serif" font-size="30" font-weight="bold" text-anchor="middle" fill="#171717">Aa</text>
+  <rect x="8" y="24" width="112" height="80" rx="12" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.55"/>
+</svg>
