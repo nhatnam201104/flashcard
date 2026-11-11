@@ -35,7 +35,7 @@ export type StudyQueueItem = CardRow &
 
 export interface UserSettings {
   user_id: string;
-  ai_provider: 'claude' | 'openai' | 'gemini' | 'none';
+  ai_provider: 'claude' | 'openai' | 'gemini' | 'none'; // default DB: 'gemini'
   ai_model: string | null;
   daily_new_limit: number;
   daily_review_limit: number;

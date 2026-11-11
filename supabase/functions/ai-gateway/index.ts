@@ -28,7 +28,7 @@ Respond with ONLY a JSON object, no markdown.`;
 const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o-mini',
   claude: 'claude-3-5-haiku-latest',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-flash-latest',
 };
 
 const KEY_ENV: Record<string, string> = {

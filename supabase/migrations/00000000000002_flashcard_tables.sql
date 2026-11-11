@@ -57,7 +57,7 @@ create index sentence_attempts_card_idx      on public.sentence_attempts (card_i
 -- Cấu hình app (KHÔNG chứa API key — key nằm ở Supabase secrets)
 create table public.user_settings (
   user_id           uuid primary key references auth.users(id) on delete cascade,
-  ai_provider       text not null default 'openai',   -- claude|openai|gemini|none
+  ai_provider       text not null default 'gemini',   -- claude|openai|gemini|none
   ai_model          text,
   daily_new_limit   int not null default 10 check (daily_new_limit between 0 and 200),
   daily_review_limit int not null default 100 check (daily_review_limit between 0 and 1000),
