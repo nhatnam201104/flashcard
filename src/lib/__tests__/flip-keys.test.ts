@@ -29,6 +29,15 @@ describe('isFlipKey', () => {
     expect(isFlipKey(key({ code: 'Space', key: ' ', target: LINK }))).toBe(false);
   });
 
+  it('leaves Space/Enter to custom controls with an interactive ARIA role', () => {
+    const roleButton = { tagName: 'DIV', getAttribute: (n: string) => (n === 'role' ? 'button' : null) };
+    const roleTab = { tagName: 'SPAN', getAttribute: (n: string) => (n === 'role' ? 'tab' : null) };
+    const plainDiv = { tagName: 'DIV', getAttribute: () => null };
+    expect(isFlipKey(key({ code: 'Space', key: ' ', target: roleButton as unknown as EventTarget }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter', target: roleTab as unknown as EventTarget }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Space', key: ' ', target: plainDiv as unknown as EventTarget }))).toBe(true);
+  });
+
   it('ignores keys while typing in a text field', () => {
     expect(isFlipKey(key({ code: 'Space', key: ' ', target: INPUT }))).toBe(false);
     expect(isFlipKey(key({ code: 'Space', key: ' ', target: EDITABLE }))).toBe(false);

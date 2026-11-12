@@ -22,9 +22,14 @@ function shuffle<T>(arr: T[]): T[] {
 const FEEDBACK_MS = 1100;
 
 export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
-  // `||` (not `??`) so an empty meaning falls through, matching pickDistractors' labels.
+  // `||` (not `??`) so an empty meaning falls through to the next field.
   const correct = card.meaning_vi || card.definition_en || card.word;
-  const options = useMemo(() => shuffle([correct, ...pickDistractors(card, pool)]), [card, correct, pool]);
+  const options = useMemo(() => {
+    // pickDistractors labels by `meaning_vi || word`; when the answer is definition_en a
+    // distractor could still match it, so drop any duplicate of the answer here.
+    const distractors = pickDistractors(card, pool).filter((d) => d !== correct);
+    return shuffle([correct, ...distractors]);
+  }, [card, correct, pool]);
 
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -80,6 +85,7 @@ export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
         <p className={`text-center text-sm ${picked === correct ? 'text-emerald-500' : 'text-red-500'}`}>
           {picked === correct ? '✅ Đúng — Good' : `❌ Sai — Again · đáp án: ${correct}`}
         </p>
-      )}    </div>
+      )}
+    </div>
   );
 }
