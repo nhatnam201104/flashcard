@@ -28,10 +28,10 @@ export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
   const [picked, setPicked] = useState<string | null>(null);
   const correct = card.meaning_vi ?? card.definition_en ?? card.word;
 
+  // Rendered with key={card.card_id}: every card mounts fresh, so just read the word aloud.
   useEffect(() => {
-    setPicked(null);
     speak(card.word);
-  }, [card.card_id, card.word]);
+  }, [card.word]);
 
   useEffect(() => {
     if (picked == null) return;

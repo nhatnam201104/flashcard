@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { fetchSettings, fetchStudyQueue, submitReview, type CardPoolItem } from '@/lib/api';
-import { schedule } from '@/lib/fsrs';
 import { stopSpeaking } from '@/lib/tts';
 import type { Rating, StudyMode, StudyQueueItem } from '@/types/db';
 import { FlipMode } from './FlipMode';

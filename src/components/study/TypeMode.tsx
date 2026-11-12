@@ -20,18 +20,14 @@ export function TypeMode({ card, disabled, onGrade }: Props) {
   const [value, setValue] = useState('');
   const [checked, setChecked] = useState<{ rating: Rating; correct: boolean } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const startedAt = useRef<number>(Date.now());
+  const [startedAt] = useState(() => Date.now());
 
-  useEffect(() => {
-    setValue('');
-    setChecked(null);
-    startedAt.current = Date.now();
-    inputRef.current?.focus();
-  }, [card.card_id]);
+  // Rendered with key={card.card_id}: every card mounts fresh, so only focus is needed here.
+  useEffect(() => inputRef.current?.focus(), []);
 
   function submit() {
     if (checked || !value.trim()) return;
-    const elapsed = Date.now() - startedAt.current;
+    const elapsed = Date.now() - startedAt;
     const rating = checkTyped(card.word, value, elapsed);
     setChecked({ rating, correct: rating >= 3 });
     speak(card.word);
@@ -54,7 +50,7 @@ export function TypeMode({ card, disabled, onGrade }: Props) {
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (checked) onGrade(checked.rating, { answer: value, elapsedMs: Date.now() - startedAt.current });
+          if (checked) onGrade(checked.rating, { answer: value, elapsedMs: Date.now() - startedAt });
           else submit();
         }}
       >
