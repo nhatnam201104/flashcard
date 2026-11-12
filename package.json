@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "node scripts/vitest.mjs run",
     "db:reset": "supabase db reset",
     "functions:serve": "supabase functions serve ai-gateway --no-verify-jwt=false"
   },
