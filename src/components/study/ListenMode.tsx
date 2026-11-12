@@ -23,7 +23,7 @@ export function ListenMode({ card, voice, disabled, onGrade }: Props) {
   // Rendered with key={card.card_id}: pick word vs. sentence once per card, not on every render
   // (otherwise each keystroke could switch the target away from what was spoken).
   const [fullSentence] = useState(() => card.examples.length > 0 && Math.random() < 0.5);
-  const target = fullSentence ? card.examples[0] : card.word;
+  const target = fullSentence ? card.examples[0].en : card.word;
 
   const [value, setValue] = useState('');
   const [checked, setChecked] = useState<{ rating: Rating; expected: string } | null>(null);

@@ -52,7 +52,15 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
   const card: StudyQueueItem | undefined = cards[idx];
   const done = queue.isSuccess && idx >= cards.length;
 
-  useEffect(() => () => stopSpeaking(), []);
+  // The queue is frozen for the session (staleTime: Infinity) but must not outlive it:
+  // otherwise the next session replays cards that were just graded, with stale FSRS state.
+  useEffect(
+    () => () => {
+      stopSpeaking();
+      queryClient.removeQueries({ queryKey: ['session-queue'] });
+    },
+    [queryClient],
+  );
 
   const finish = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['today-stats'] });

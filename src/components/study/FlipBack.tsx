@@ -62,11 +62,14 @@ export function FlipBack({ card, disabled, onGrade }: Props) {
             <p className="text-xs font-semibold uppercase text-muted-foreground">Ví dụ</p>
             <ul className="mt-1 space-y-1 text-sm">
               {card.examples.map((ex) => (
-                <li key={ex} className="flex items-start gap-2">
-                  <button type="button" className="text-xs" aria-label="Đọc câu" onClick={() => speak(ex)}>
+                <li key={ex.en} className="flex items-start gap-2">
+                  <button type="button" className="text-xs" aria-label="Đọc câu" onClick={() => speak(ex.en)}>
                     🔊
                   </button>
-                  <span>{ex}</span>
+                  <span>
+                    {ex.en}
+                    {ex.vi && <span className="block text-xs text-muted-foreground">{ex.vi}</span>}
+                  </span>
                 </li>
               ))}
             </ul>

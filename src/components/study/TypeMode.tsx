@@ -16,6 +16,11 @@ interface Props {
 
 const LABELS: Record<Rating, string> = { 1: 'Again', 2: 'Hard', 3: 'Good', 4: 'Easy' };
 
+/** Words like "(be) keen on" contain regex metacharacters. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function TypeMode({ card, disabled, onGrade }: Props) {
   const [value, setValue] = useState('');
   const [checked, setChecked] = useState<{ rating: Rating; correct: boolean } | null>(null);
@@ -41,7 +46,7 @@ export function TypeMode({ card, disabled, onGrade }: Props) {
         <h2 className="mt-1 text-xl font-semibold">{card.meaning_vi ?? card.definition_en}</h2>
         {card.examples.length > 0 && (
           <p className="mt-3 text-sm italic text-muted-foreground">
-            “{card.examples[0].replace(new RegExp(card.word, 'ig'), '_____')}”
+            “{card.examples[0].en.replace(new RegExp(escapeRegExp(card.word), 'ig'), '_____')}”
           </p>
         )}
       </div>
