@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { pickDistractors } from '@/lib/grading';
 import { speak } from '@/lib/tts';
 import type { Rating, StudyQueueItem } from '@/types/db';
@@ -18,26 +19,31 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
+/** How long the right/wrong feedback stays on screen before the grade is sent. */
+const FEEDBACK_MS = 1100;
+
 export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
-  const options = useMemo(() => {
-    const correct = card.meaning_vi ?? card.definition_en ?? card.word;
-    const distractors = pickDistractors(card, pool);
-    return shuffle([correct, ...distractors]);
-  }, [card, pool]);
+  const correct = card.meaning_vi ?? card.definition_en ?? card.word;
+  const options = useMemo(() => shuffle([correct, ...pickDistractors(card, pool)]), [card, correct, pool]);
 
   const [picked, setPicked] = useState<string | null>(null);
-  const correct = card.meaning_vi ?? card.definition_en ?? card.word;
+  // Set once the grade has been sent. Rendered with key={card.card_id}, so a successful
+  // grade remounts us; if we are still here and not busy, the submit failed.
+  const [sent, setSent] = useState(false);
+  const rating: Rating = picked === correct ? 3 : 1;
 
-  // Rendered with key={card.card_id}: every card mounts fresh, so just read the word aloud.
   useEffect(() => {
     speak(card.word);
   }, [card.word]);
 
   useEffect(() => {
     if (picked == null) return;
-    const t = setTimeout(() => onGrade(picked === correct ? 3 : 1), 1100);
+    const t = setTimeout(() => {
+      setSent(true);
+      onGrade(rating);
+    }, FEEDBACK_MS);
     return () => clearTimeout(t);
-  }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps -- fire once per pick
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -80,6 +86,12 @@ export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
         <p className={`text-center text-sm ${picked === correct ? 'text-emerald-500' : 'text-red-500'}`}>
           {picked === correct ? '✅ Đúng — Good' : `❌ Sai — Again · đáp án: ${correct}`}
         </p>
+      )}
+
+      {sent && !disabled && (
+        <Button variant="outline" onClick={() => onGrade(rating)}>
+          Gửi lại
+        </Button>
       )}
     </div>
   );

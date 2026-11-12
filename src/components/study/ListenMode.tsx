@@ -35,7 +35,7 @@ export function ListenMode({ card, voice, disabled, onGrade }: Props) {
       clearTimeout(t);
       stopSpeaking();
     };
-  }, [card.card_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [target, voice]); // re-speak if the user's voice setting arrives after mount
 
   if (!ttsSupported()) {
     return (

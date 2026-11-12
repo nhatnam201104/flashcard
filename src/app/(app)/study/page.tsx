@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { fetchCardPool, fetchStudyQueue, fetchTodayStats } from '@/lib/api';
+import { fetchCardPool, fetchStudyQueue, fetchTodayStats, type CardPoolItem } from '@/lib/api';
 import { STUDY_MODES, type StudyMode } from '@/types/db';
 import { StudySession } from '@/components/study/StudySession';
+
+/** Stable fallback so ChoiceMode doesn't reshuffle its options on every render while the pool loads. */
+const EMPTY_POOL: CardPoolItem[] = [];
 
 export default function StudyPage() {
   const [mode, setMode] = useState<StudyMode>('flip');
@@ -38,7 +41,7 @@ export default function StudyPage() {
       <StudySession
         mode={mode}
         topic={topic}
-        pool={pool.data ?? []}
+        pool={pool.data ?? EMPTY_POOL}
         onExit={() => {
           setRunning(false);
           queue.refetch();

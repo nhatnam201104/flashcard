@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveFlipKey, type FlipKeyEvent } from '../flip-keys';
 
 function key(overrides: Partial<FlipKeyEvent>): FlipKeyEvent {
-  return { code: '', key: '', repeat: false, ctrlKey: false, altKey: false, metaKey: false, ...overrides };
+  return { code: '', key: '', repeat: false, ctrlKey: false, altKey: false, metaKey: false, target: null, ...overrides };
 }
 
 const FRONT = { flipped: false, disabled: false };
@@ -40,6 +40,29 @@ describe('resolveFlipKey', () => {
     expect(resolveFlipKey(key({ code: 'Digit1', key: '1', ctrlKey: true }), BACK)).toBeNull();
     expect(resolveFlipKey(key({ code: 'Digit1', key: '1', altKey: true }), BACK)).toBeNull();
     expect(resolveFlipKey(key({ code: 'Digit1', key: '1', metaKey: true }), BACK)).toBeNull();
+  });
+
+  it('flips on numpad Enter too', () => {
+    expect(resolveFlipKey(key({ code: 'NumpadEnter', key: 'Enter' }), FRONT)).toEqual({ type: 'flip' });
+  });
+
+  it('leaves Space/Enter to a focused button or link so it still activates natively', () => {
+    const button = { tagName: 'BUTTON' } as unknown as EventTarget;
+    const link = { tagName: 'A' } as unknown as EventTarget;
+    expect(resolveFlipKey(key({ code: 'Enter', key: 'Enter', target: button }), FRONT)).toBeNull();
+    expect(resolveFlipKey(key({ code: 'Space', key: ' ', target: link }), FRONT)).toBeNull();
+  });
+
+  it('still grades with digits while a button has focus', () => {
+    const button = { tagName: 'BUTTON' } as unknown as EventTarget;
+    expect(resolveFlipKey(key({ code: 'Digit2', key: '2', target: button }), BACK)).toEqual({ type: 'grade', rating: 2 });
+  });
+
+  it('ignores every key while typing in a text field', () => {
+    const input = { tagName: 'INPUT' } as unknown as EventTarget;
+    const editable = { tagName: 'DIV', isContentEditable: true } as unknown as EventTarget;
+    expect(resolveFlipKey(key({ code: 'Digit3', key: '3', target: input }), BACK)).toBeNull();
+    expect(resolveFlipKey(key({ code: 'Space', key: ' ', target: editable }), FRONT)).toBeNull();
   });
 
   it('ignores unrelated keys', () => {

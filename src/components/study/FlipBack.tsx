@@ -23,8 +23,8 @@ const RATINGS: { value: Rating; label: string; key: string; className: string }[
 
 /**
  * Back face of a flip card plus its rating controls.
- * Mounted only once the front has finished exiting, so the rating buttons and
- * keys 1-4 can never grade a card whose answer is not on screen yet.
+ * Mounted only once the front has finished exiting, and the buttons fade in
+ * together with the answer, so grading is never offered while the front is showing.
  */
 export function FlipBack({ card, disabled, onGrade }: Props) {
   useEffect(() => {

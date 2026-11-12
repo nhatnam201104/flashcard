@@ -24,13 +24,14 @@ export function FlipMode({ card, disabled, onGrade }: Props) {
   useEffect(() => {
     if (flipped) return;
     function onKey(e: KeyboardEvent) {
-      if (resolveFlipKey(e, { flipped: false, disabled })?.type !== 'flip') return;
+      // Flipping is always allowed; `disabled` only gates grading (handled in FlipBack).
+      if (resolveFlipKey(e, { flipped: false, disabled: false })?.type !== 'flip') return;
       e.preventDefault();
       setFlipped(true);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [flipped, disabled]);
+  }, [flipped]);
 
   return (
     <div className="flex flex-1 flex-col">
