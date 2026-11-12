@@ -1,72 +1,71 @@
 import { describe, expect, it } from 'vitest';
-import { resolveFlipKey, type FlipKeyEvent } from '../flip-keys';
+import { gradeForKey, isFlipKey, type FlipKeyEvent } from '../flip-keys';
 
 function key(overrides: Partial<FlipKeyEvent>): FlipKeyEvent {
   return { code: '', key: '', repeat: false, ctrlKey: false, altKey: false, metaKey: false, target: null, ...overrides };
 }
 
-const FRONT = { flipped: false, disabled: false };
-const BACK = { flipped: true, disabled: false };
+const BUTTON = { tagName: 'BUTTON' } as unknown as EventTarget;
+const LINK = { tagName: 'A' } as unknown as EventTarget;
+const INPUT = { tagName: 'INPUT' } as unknown as EventTarget;
+const EDITABLE = { tagName: 'DIV', isContentEditable: true } as unknown as EventTarget;
 
-describe('resolveFlipKey', () => {
-  it('flips the card on Space or Enter when showing the front', () => {
-    expect(resolveFlipKey(key({ code: 'Space', key: ' ' }), FRONT)).toEqual({ type: 'flip' });
-    expect(resolveFlipKey(key({ code: 'Enter', key: 'Enter' }), FRONT)).toEqual({ type: 'flip' });
+describe('isFlipKey', () => {
+  it('accepts Space, Enter and numpad Enter', () => {
+    expect(isFlipKey(key({ code: 'Space', key: ' ' }))).toBe(true);
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter' }))).toBe(true);
+    expect(isFlipKey(key({ code: 'NumpadEnter', key: 'Enter' }))).toBe(true);
   });
 
-  it('does not flip again when already showing the back', () => {
-    expect(resolveFlipKey(key({ code: 'Space', key: ' ' }), BACK)).toBeNull();
-  });
-
-  it('grades with keys 1-4 when showing the back', () => {
-    expect(resolveFlipKey(key({ code: 'Digit1', key: '1' }), BACK)).toEqual({ type: 'grade', rating: 1 });
-    expect(resolveFlipKey(key({ code: 'Digit4', key: '4' }), BACK)).toEqual({ type: 'grade', rating: 4 });
-  });
-
-  it('ignores grade keys while the front is showing', () => {
-    expect(resolveFlipKey(key({ code: 'Digit3', key: '3' }), FRONT)).toBeNull();
-  });
-
-  it('ignores grade keys while disabled (review in flight)', () => {
-    expect(resolveFlipKey(key({ code: 'Digit3', key: '3' }), { flipped: true, disabled: true })).toBeNull();
-  });
-
-  it('ignores auto-repeat events from a held key', () => {
-    expect(resolveFlipKey(key({ code: 'Digit3', key: '3', repeat: true }), BACK)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'Space', key: ' ', repeat: true }), FRONT)).toBeNull();
-  });
-
-  it('ignores keys combined with Ctrl, Alt or Meta (e.g. tab switching)', () => {
-    expect(resolveFlipKey(key({ code: 'Digit1', key: '1', ctrlKey: true }), BACK)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'Digit1', key: '1', altKey: true }), BACK)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'Digit1', key: '1', metaKey: true }), BACK)).toBeNull();
-  });
-
-  it('flips on numpad Enter too', () => {
-    expect(resolveFlipKey(key({ code: 'NumpadEnter', key: 'Enter' }), FRONT)).toEqual({ type: 'flip' });
+  it('ignores auto-repeat and Ctrl/Alt/Meta combinations', () => {
+    expect(isFlipKey(key({ code: 'Space', key: ' ', repeat: true }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter', ctrlKey: true }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter', altKey: true }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter', metaKey: true }))).toBe(false);
   });
 
   it('leaves Space/Enter to a focused button or link so it still activates natively', () => {
-    const button = { tagName: 'BUTTON' } as unknown as EventTarget;
-    const link = { tagName: 'A' } as unknown as EventTarget;
-    expect(resolveFlipKey(key({ code: 'Enter', key: 'Enter', target: button }), FRONT)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'Space', key: ' ', target: link }), FRONT)).toBeNull();
+    expect(isFlipKey(key({ code: 'Enter', key: 'Enter', target: BUTTON }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Space', key: ' ', target: LINK }))).toBe(false);
   });
 
-  it('still grades with digits while a button has focus', () => {
-    const button = { tagName: 'BUTTON' } as unknown as EventTarget;
-    expect(resolveFlipKey(key({ code: 'Digit2', key: '2', target: button }), BACK)).toEqual({ type: 'grade', rating: 2 });
-  });
-
-  it('ignores every key while typing in a text field', () => {
-    const input = { tagName: 'INPUT' } as unknown as EventTarget;
-    const editable = { tagName: 'DIV', isContentEditable: true } as unknown as EventTarget;
-    expect(resolveFlipKey(key({ code: 'Digit3', key: '3', target: input }), BACK)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'Space', key: ' ', target: editable }), FRONT)).toBeNull();
+  it('ignores keys while typing in a text field', () => {
+    expect(isFlipKey(key({ code: 'Space', key: ' ', target: INPUT }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Space', key: ' ', target: EDITABLE }))).toBe(false);
   });
 
   it('ignores unrelated keys', () => {
-    expect(resolveFlipKey(key({ code: 'Digit5', key: '5' }), BACK)).toBeNull();
-    expect(resolveFlipKey(key({ code: 'KeyA', key: 'a' }), FRONT)).toBeNull();
+    expect(isFlipKey(key({ code: 'KeyA', key: 'a' }))).toBe(false);
+    expect(isFlipKey(key({ code: 'Digit1', key: '1' }))).toBe(false);
+  });
+});
+
+describe('gradeForKey', () => {
+  it('maps keys 1-4 to ratings', () => {
+    expect(gradeForKey(key({ code: 'Digit1', key: '1' }))).toBe(1);
+    expect(gradeForKey(key({ code: 'Numpad4', key: '4' }))).toBe(4);
+  });
+
+  it('ignores auto-repeat events from a held key', () => {
+    expect(gradeForKey(key({ code: 'Digit3', key: '3', repeat: true }))).toBeNull();
+  });
+
+  it('ignores keys combined with Ctrl, Alt or Meta (e.g. tab switching)', () => {
+    expect(gradeForKey(key({ code: 'Digit1', key: '1', ctrlKey: true }))).toBeNull();
+    expect(gradeForKey(key({ code: 'Digit1', key: '1', altKey: true }))).toBeNull();
+    expect(gradeForKey(key({ code: 'Digit1', key: '1', metaKey: true }))).toBeNull();
+  });
+
+  it('still grades while a button has focus', () => {
+    expect(gradeForKey(key({ code: 'Digit2', key: '2', target: BUTTON }))).toBe(2);
+  });
+
+  it('ignores digits typed into a text field', () => {
+    expect(gradeForKey(key({ code: 'Digit3', key: '3', target: INPUT }))).toBeNull();
+  });
+
+  it('ignores unrelated keys', () => {
+    expect(gradeForKey(key({ code: 'Digit5', key: '5' }))).toBeNull();
+    expect(gradeForKey(key({ code: 'Space', key: ' ' }))).toBeNull();
   });
 });

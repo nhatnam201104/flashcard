@@ -11,13 +11,6 @@ export interface FlipKeyEvent {
   target: EventTarget | null;
 }
 
-export interface FlipKeyState {
-  flipped: boolean;
-  disabled: boolean;
-}
-
-export type FlipKeyAction = { type: 'flip' } | { type: 'grade'; rating: Rating };
-
 const FLIP_CODES = new Set(['Space', 'Enter', 'NumpadEnter']);
 const GRADE_KEYS: Record<string, Rating> = { '1': 1, '2': 2, '3': 3, '4': 4 };
 /** Elements where the user is typing: no shortcut may hijack their keys. */
@@ -30,25 +23,23 @@ interface ElementLike {
   isContentEditable?: boolean;
 }
 
-function isTextEntry(target: EventTarget | null): boolean {
-  const el = target as ElementLike | null;
-  return !!el && (el.isContentEditable === true || TEXT_ENTRY_TAGS.has(el.tagName ?? ''));
+function asElement(target: EventTarget | null): ElementLike {
+  return (target ?? {}) as ElementLike;
 }
 
-function isActivatable(target: EventTarget | null): boolean {
-  const el = target as ElementLike | null;
-  return !!el && ACTIVATABLE_TAGS.has(el.tagName ?? '');
+/** Held keys, modifier combos (Ctrl+1 = switch tab) and typing in a text field are never shortcuts. */
+function isShortcutCandidate(e: FlipKeyEvent): boolean {
+  if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return false;
+  const el = asElement(e.target);
+  return el.isContentEditable !== true && !TEXT_ENTRY_TAGS.has(el.tagName ?? '');
 }
 
-export function resolveFlipKey(e: FlipKeyEvent, { flipped, disabled }: FlipKeyState): FlipKeyAction | null {
-  if (e.repeat || e.ctrlKey || e.altKey || e.metaKey || isTextEntry(e.target)) return null;
+/** Space / Enter flips the card, unless a focused button or link should receive it. */
+export function isFlipKey(e: FlipKeyEvent): boolean {
+  return isShortcutCandidate(e) && FLIP_CODES.has(e.code) && !ACTIVATABLE_TAGS.has(asElement(e.target).tagName ?? '');
+}
 
-  if (!flipped) {
-    // A focused button/link handles Space/Enter itself (incl. the card's own front face).
-    return FLIP_CODES.has(e.code) && !isActivatable(e.target) ? { type: 'flip' } : null;
-  }
-
-  const rating = GRADE_KEYS[e.key];
-  if (rating === undefined || disabled) return null;
-  return { type: 'grade', rating };
+/** Keys 1-4 map to Again / Hard / Good / Easy. */
+export function gradeForKey(e: FlipKeyEvent): Rating | null {
+  return isShortcutCandidate(e) ? (GRADE_KEYS[e.key] ?? null) : null;
 }

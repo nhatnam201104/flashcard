@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { resolveFlipKey } from '@/lib/flip-keys';
+import { isFlipKey } from '@/lib/flip-keys';
 import type { Rating, StudyQueueItem } from '@/types/db';
 import { FlipBack } from './FlipBack';
 import { FLIP_MOTION_PROPS } from './flip-motion';
@@ -24,8 +24,7 @@ export function FlipMode({ card, disabled, onGrade }: Props) {
   useEffect(() => {
     if (flipped) return;
     function onKey(e: KeyboardEvent) {
-      // Flipping is always allowed; `disabled` only gates grading (handled in FlipBack).
-      if (resolveFlipKey(e, { flipped: false, disabled: false })?.type !== 'flip') return;
+      if (!isFlipKey(e)) return;
       e.preventDefault();
       setFlipped(true);
     }

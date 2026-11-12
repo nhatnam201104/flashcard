@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { resolveFlipKey } from '@/lib/flip-keys';
+import { gradeForKey } from '@/lib/flip-keys';
 import { speak } from '@/lib/tts';
 import type { Rating, StudyQueueItem } from '@/types/db';
 import { FLIP_MOTION_PROPS } from './flip-motion';
@@ -29,8 +29,9 @@ const RATINGS: { value: Rating; label: string; key: string; className: string }[
 export function FlipBack({ card, disabled, onGrade }: Props) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const action = resolveFlipKey(e, { flipped: true, disabled });
-      if (action?.type === 'grade') onGrade(action.rating);
+      if (disabled) return;
+      const rating = gradeForKey(e);
+      if (rating !== null) onGrade(rating);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

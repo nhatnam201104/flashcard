@@ -121,7 +121,7 @@ export default function StudyPage() {
           </div>
           <Progress value={Math.min(100, (queuePreview.length / 60) * 100)} className="h-1.5" />
 
-          <Button className="w-full" size="lg" disabled={!queue.data || queuePreview.length === 0} onClick={() => setRunning(true)}>
+          <Button className="w-full" size="lg" disabled={!queue.data || queuePreview.length === 0 || (mode === 'choice' && pool.isLoading)} onClick={() => setRunning(true)}>
             Bắt đầu · {STUDY_MODES.find((m) => m.id === mode)?.label}
             {topic !== 'all' ? ` · ${topic}` : ' · tất cả'}
           </Button>

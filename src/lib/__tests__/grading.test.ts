@@ -77,4 +77,15 @@ describe('pickDistractors — trắc nghiệm', () => {
   it('pool quá nhỏ vẫn không crash', () => {
     expect(pickDistractors(pool[0], [pool[0]]).length).toBeLessThanOrEqual(3);
   });
+  it('bỏ từ đồng nghĩa có cùng nghĩa với đáp án và không lặp nhiễu', () => {
+    const withSynonyms = [
+      ...pool,
+      { word: 'due date', meaning_vi: 'hạn chót', topic: 'Work', pos: 'n' },
+      { word: 'bargain', meaning_vi: 'đàm phán', topic: 'Work', pos: 'v' },
+    ];
+    const distractors = pickDistractors(pool[0], withSynonyms);
+    expect(distractors).not.toContain('hạn chót');
+    expect(new Set(distractors).size).toBe(distractors.length);
+    expect(distractors).toHaveLength(3);
+  });
 });

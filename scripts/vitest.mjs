@@ -13,5 +13,7 @@ import { pathToFileURL } from 'node:url';
 process.chdir(realpathSync.native(process.cwd()));
 
 const require = createRequire(join(process.cwd(), 'package.json'));
-const vitestDir = dirname(require.resolve('vitest/package.json'));
-await import(pathToFileURL(join(vitestDir, 'vitest.mjs')).href);
+const pkgPath = require.resolve('vitest/package.json');
+const { bin } = require(pkgPath);
+const binFile = typeof bin === 'string' ? bin : bin.vitest;
+await import(pathToFileURL(join(dirname(pkgPath), binFile)).href);
