@@ -122,7 +122,7 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
       {error && <p className="rounded-lg bg-destructive/10 p-2 text-center text-sm text-destructive">{error}</p>}
 
       <div className="flex flex-1 flex-col">
-        {mode === 'flip' && <FlipMode card={card} disabled={busy} onGrade={(r) => handleGraded(r)} />}
+        {mode === 'flip' && <FlipMode key={card.card_id} card={card} disabled={busy} onGrade={handleGraded} />}
         {mode === 'type' && (
           <TypeMode key={card.card_id} card={card} disabled={busy} onGrade={(r, extra) => handleGraded(r, extra)} />
         )}
