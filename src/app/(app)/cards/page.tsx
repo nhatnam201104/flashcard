@@ -1,21 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fetchCards, fetchCardPool } from '@/lib/api';
-import type { CardRow } from '@/types/db';
-import { CardForm } from '@/components/cards/CardForm';
 
+/**
+ * Read-only list: signed-in users may only SELECT cards (RLS policy
+ * cards_select_authenticated); the daily ingest pipeline owns writes.
+ */
 export default function CardsPage() {
   const [search, setSearch] = useState('');
   const [topic, setTopic] = useState('all');
   const [level, setLevel] = useState('all');
-  const [editing, setEditing] = useState<CardRow | 'new' | null>(null);
-  const queryClient = useQueryClient();
 
   const pool = useQuery({ queryKey: ['card-pool'], queryFn: fetchCardPool });
   const cards = useQuery({
@@ -39,7 +38,6 @@ export default function CardsPage() {
           <h1 className="text-2xl font-bold">Thẻ từ</h1>
           <p className="text-sm text-muted-foreground">{cards.data?.length ?? '…'} thẻ</p>
         </div>
-        <Button onClick={() => setEditing('new')}>+ Thêm</Button>
       </header>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -69,11 +67,9 @@ export default function CardsPage() {
 
       <div className="space-y-2">
         {(cards.data ?? []).map((card) => (
-          <button
+          <article
             key={card.id}
-            type="button"
-            onClick={() => setEditing(card)}
-            className="flex w-full items-center justify-between gap-3 rounded-xl border bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent"
+            className="flex w-full items-center justify-between gap-3 rounded-xl border bg-card p-4 text-left shadow-sm"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -87,25 +83,13 @@ export default function CardsPage() {
               {card.topic && <Badge variant="secondary">{card.topic}</Badge>}
               <span className="text-xs text-muted-foreground">rep {card.stage}</span>
             </div>
-          </button>
+          </article>
         ))}
         {cards.isSuccess && cards.data.length === 0 && (
           <p className="py-10 text-center text-sm text-muted-foreground">Không có thẻ nào khớp bộ lọc.</p>
         )}
       </div>
 
-      {editing && (
-        <CardForm
-          card={editing === 'new' ? null : editing}
-          topics={topics}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            void queryClient.invalidateQueries({ queryKey: ['cards'] });
-            void queryClient.invalidateQueries({ queryKey: ['card-pool'] });
-          }}
-        />
-      )}
     </div>
   );
 }

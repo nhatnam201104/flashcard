@@ -99,10 +99,19 @@ async function callProvider(
   return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '') as string;
 }
 
+// Browsers call this function cross-origin (app origin → *.supabase.co), so every
+// response needs CORS headers and the OPTIONS preflight must succeed. Auth is a
+// bearer JWT (not cookies), so a wildcard origin does not expose credentials.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-region',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
 }
 
@@ -114,6 +123,7 @@ function scoreToRating(score: number): number {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (req.method !== 'POST') return json({ ok: false, reason: 'method_not_allowed' }, 405);
 
   try {
