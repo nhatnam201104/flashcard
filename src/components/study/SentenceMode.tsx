@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -23,14 +23,7 @@ export function SentenceMode({ card, disabled, onGrade }: Props) {
   const [result, setResult] = useState<AiGradeResult | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
   const [busyAi, setBusyAi] = useState(false);
-  const startedAt = useRef(Date.now());
-
-  useEffect(() => {
-    setSentence('');
-    setResult(null);
-    setRating(null);
-    startedAt.current = Date.now();
-  }, [card.card_id]);
+  const [startedAt] = useState(() => Date.now());
 
   async function submitToAi() {
     if (!sentence.trim() || busyAi) return;
@@ -99,7 +92,7 @@ export function SentenceMode({ card, disabled, onGrade }: Props) {
           <Button
             className="w-full"
             disabled={rating == null || disabled}
-            onClick={() => rating && onGrade(rating, { answer: sentence, elapsedMs: Date.now() - startedAt.current })}
+            onClick={() => rating && onGrade(rating, { answer: sentence, elapsedMs: Date.now() - startedAt })}
           >
             Tiếp →
           </Button>
@@ -122,7 +115,7 @@ export function SentenceMode({ card, disabled, onGrade }: Props) {
           <Button
             className="w-full"
             disabled={rating == null || disabled}
-            onClick={() => rating && onGrade(rating, { answer: sentence, elapsedMs: Date.now() - startedAt.current })}
+            onClick={() => rating && onGrade(rating, { answer: sentence, elapsedMs: Date.now() - startedAt })}
           >
             Tiếp →
           </Button>

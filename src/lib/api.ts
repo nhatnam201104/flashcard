@@ -1,9 +1,15 @@
 // Toàn bộ truy cập dữ liệu phía client tập trung ở đây
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { schedule, emptyCardState, humanizeDue } from '@/lib/fsrs';
+import { normalizeExamples } from '@/lib/examples';
 import type { CardRow, Rating, StudyMode, StudyQueueItem, UserSettings } from '@/types/db';
 
 const sb = () => getSupabaseBrowserClient();
+
+/** `examples` is untyped jsonb in the DB; give the UI a single, safe shape. */
+function withExamples<T extends { examples?: unknown }>(row: T): T & Pick<CardRow, 'examples'> {
+  return { ...row, examples: normalizeExamples(row.examples) };
+}
 
 export interface CardPoolItem {
   word: string;
@@ -18,7 +24,7 @@ export async function fetchStudyQueue(topic?: string | null): Promise<StudyQueue
     p_topic: topic && topic !== 'all' ? topic : null,
   });
   if (error) throw error;
-  return (data ?? []) as StudyQueueItem[];
+  return ((data ?? []) as StudyQueueItem[]).map(withExamples);
 }
 
 export async function fetchCardPool(): Promise<CardPoolItem[]> {
@@ -92,7 +98,7 @@ export async function fetchCards(filters: CardFilters): Promise<CardRow[]> {
   }
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as CardRow[];
+  return ((data ?? []) as CardRow[]).map(withExamples);
 }
 
 export async function upsertCard(card: Partial<CardRow> & { word: string }): Promise<void> {
@@ -102,7 +108,8 @@ export async function upsertCard(card: Partial<CardRow> & { word: string }): Pro
     pos: card.pos || null,
     meaning_vi: card.meaning_vi || null,
     definition_en: card.definition_en || null,
-    examples: card.examples ?? [],
+    // Stored as {en, vi} objects, matching the existing rows.
+    examples: (card.examples ?? []).map(({ en, vi }) => (vi ? { en, vi } : { en })),
     collocations: card.collocations ?? [],
     synonyms: card.synonyms ?? [],
     topic: card.topic || null,

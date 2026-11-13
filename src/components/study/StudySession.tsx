@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { fetchSettings, fetchStudyQueue, submitReview, type CardPoolItem } from '@/lib/api';
-import { schedule } from '@/lib/fsrs';
 import { stopSpeaking } from '@/lib/tts';
 import type { Rating, StudyMode, StudyQueueItem } from '@/types/db';
 import { FlipMode } from './FlipMode';
@@ -26,6 +25,17 @@ interface SessionResult {
   rating: Rating;
 }
 
+interface GradeExtra {
+  answer?: string;
+  elapsedMs?: number;
+}
+
+/** A grade whose submit failed; kept so the user can resend it from any mode. */
+interface FailedGrade {
+  rating: Rating;
+  extra?: GradeExtra;
+}
+
 export function StudySession({ mode, topic, pool, onExit }: Props) {
   const queryClient = useQueryClient();
   const queue = useQuery({ queryKey: ['session-queue', topic], queryFn: () => fetchStudyQueue(topic), staleTime: Infinity });
@@ -36,12 +46,21 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
   const [nextDueLabel, setNextDueLabel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedGrade, setFailedGrade] = useState<FailedGrade | null>(null);
 
   const cards = useMemo(() => queue.data ?? [], [queue.data]);
   const card: StudyQueueItem | undefined = cards[idx];
   const done = queue.isSuccess && idx >= cards.length;
 
-  useEffect(() => () => stopSpeaking(), []);
+  // The queue is frozen for the session (staleTime: Infinity) but must not outlive it:
+  // otherwise the next session replays cards that were just graded, with stale FSRS state.
+  useEffect(
+    () => () => {
+      stopSpeaking();
+      queryClient.removeQueries({ queryKey: ['session-queue'] });
+    },
+    [queryClient],
+  );
 
   const finish = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['today-stats'] });
@@ -50,10 +69,11 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
   }, [onExit, queryClient]);
 
   const handleGraded = useCallback(
-    async (rating: Rating, extra?: { answer?: string; elapsedMs?: number }) => {
+    async (rating: Rating, extra?: GradeExtra) => {
       if (!card || busy) return;
       setBusy(true);
       setError(null);
+      setFailedGrade(null);
       try {
         const { nextDueLabel: label } = await submitReview(card, rating, mode, {
           answer: extra?.answer,
@@ -65,6 +85,7 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
         setIdx((i) => i + 1);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Lỗi gửi kết quả');
+        setFailedGrade({ rating, extra });
       } finally {
         setBusy(false);
       }
@@ -72,7 +93,9 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
     [busy, card, mode, settings.data],
   );
 
-  if (queue.isLoading) return <p className="pt-20 text-center text-muted-foreground">Đang lấy hàng đợi…</p>;
+  // Wait for settings too: voice and desired_retention must be right from the first card.
+  if (queue.isLoading || settings.isLoading)
+    return <p className="pt-20 text-center text-muted-foreground">Đang lấy hàng đợi…</p>;
   if (queue.isError)
     return (
       <div className="space-y-4 pt-20 text-center">
@@ -119,10 +142,19 @@ export function StudySession({ mode, topic, pool, onExit }: Props) {
         <Progress value={(idx / cards.length) * 100} className="h-1.5" />
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 p-2 text-center text-sm text-destructive">{error}</p>}
+      {error && (
+        <div className="flex items-center justify-center gap-2 rounded-lg bg-destructive/10 p-2 text-sm text-destructive">
+          <span>{error}</span>
+          {failedGrade && !busy && (
+            <Button size="sm" variant="outline" onClick={() => void handleGraded(failedGrade.rating, failedGrade.extra)}>
+              Gửi lại
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col">
-        {mode === 'flip' && <FlipMode card={card} disabled={busy} onGrade={(r) => handleGraded(r)} />}
+        {mode === 'flip' && <FlipMode key={card.card_id} card={card} disabled={busy} onGrade={handleGraded} />}
         {mode === 'type' && (
           <TypeMode key={card.card_id} card={card} disabled={busy} onGrade={(r, extra) => handleGraded(r, extra)} />
         )}

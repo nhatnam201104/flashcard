@@ -69,7 +69,16 @@ export function pickDistractors(
   const samePos = others.filter((c) => !sameTopic.includes(c) && c.pos && c.pos === target.pos);
   const filler = others.filter((c) => !sameTopic.includes(c) && !samePos.includes(c));
   const shuffled = (arr: typeof others) => arr.sort(() => Math.random() - 0.5);
-  return [...shuffled(sameTopic), ...shuffled(samePos), ...shuffled(filler)]
-    .slice(0, 3)
-    .map((c) => c.meaning_vi || c.word);
+  const label = (c: { word: string; meaning_vi: string | null }) => c.meaning_vi || c.word;
+  // Distinct labels, never equal to the answer (synonyms share meaning_vi with the target).
+  const seen = new Set([label(target)]);
+  const distractors: string[] = [];
+  for (const c of [...shuffled(sameTopic), ...shuffled(samePos), ...shuffled(filler)]) {
+    if (distractors.length === 3) break;
+    const text = label(c);
+    if (seen.has(text)) continue;
+    seen.add(text);
+    distractors.push(text);
+  }
+  return distractors;
 }

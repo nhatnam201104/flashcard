@@ -1,5 +1,11 @@
 // DB & RPC row types (snake_case khớp Postgres)
 
+/** An example sentence; `vi` is its Vietnamese translation when available. */
+export interface Example {
+  en: string;
+  vi: string | null;
+}
+
 export interface CardRow {
   id: number;
   word: string;
@@ -7,7 +13,7 @@ export interface CardRow {
   pos: string | null;
   meaning_vi: string | null;
   definition_en: string | null;
-  examples: string[];
+  examples: Example[];
   collocations: string[];
   synonyms: string[];
   topic: string | null;

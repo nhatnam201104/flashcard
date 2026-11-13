@@ -10,6 +10,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { upsertCard } from '@/lib/api';
+import { exampleToLine, lineToExample } from '@/lib/examples';
 import type { CardRow } from '@/types/db';
 
 interface Props {
@@ -37,7 +38,7 @@ export function CardForm({ card, topics, onClose, onSaved }: Props) {
       pos: card?.pos ?? '',
       meaning_vi: card?.meaning_vi ?? '',
       definition_en: card?.definition_en ?? '',
-      examples: lines(card?.examples),
+      examples: (card?.examples ?? []).map(exampleToLine).join('\n'),
       collocations: lines(card?.collocations),
       synonyms: lines(card?.synonyms),
       topic: card?.topic ?? '',
@@ -60,7 +61,7 @@ export function CardForm({ card, topics, onClose, onSaved }: Props) {
         pos: form.pos,
         meaning_vi: form.meaning_vi,
         definition_en: form.definition_en,
-        examples: toLines(form.examples),
+        examples: toLines(form.examples).map(lineToExample),
         collocations: toLines(form.collocations),
         synonyms: toLines(form.synonyms),
         topic: form.topic,
@@ -113,7 +114,13 @@ export function CardForm({ card, topics, onClose, onSaved }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label>Ví dụ</Label>
-            <Textarea value={form.examples} onChange={set('examples')} rows={3} />
+            <Textarea
+              value={form.examples}
+              onChange={set('examples')}
+              rows={3}
+              placeholder="Mỗi dòng một câu: câu tiếng Anh | bản dịch (tuỳ chọn)"
+            />
+            <p className="text-xs text-muted-foreground">Mỗi dòng một câu · dạng “câu tiếng Anh | bản dịch”.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Collocations</Label>

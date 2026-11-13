@@ -18,26 +18,31 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
+/** How long the right/wrong feedback stays on screen before the grade is sent. */
+const FEEDBACK_MS = 1100;
+
 export function ChoiceMode({ card, pool, disabled, onGrade }: Props) {
+  // `||` (not `??`) so an empty meaning falls through to the next field.
+  const correct = card.meaning_vi || card.definition_en || card.word;
   const options = useMemo(() => {
-    const correct = card.meaning_vi ?? card.definition_en ?? card.word;
-    const distractors = pickDistractors(card, pool);
+    // pickDistractors labels by `meaning_vi || word`; when the answer is definition_en a
+    // distractor could still match it, so drop any duplicate of the answer here.
+    const distractors = pickDistractors(card, pool).filter((d) => d !== correct);
     return shuffle([correct, ...distractors]);
-  }, [card, pool]);
+  }, [card, correct, pool]);
 
   const [picked, setPicked] = useState<string | null>(null);
-  const correct = card.meaning_vi ?? card.definition_en ?? card.word;
 
   useEffect(() => {
-    setPicked(null);
     speak(card.word);
-  }, [card.card_id, card.word]);
+  }, [card.word]);
 
+  // A failed submit is retried from StudySession's error banner.
   useEffect(() => {
     if (picked == null) return;
-    const t = setTimeout(() => onGrade(picked === correct ? 3 : 1), 1100);
+    const t = setTimeout(() => onGrade(picked === correct ? 3 : 1), FEEDBACK_MS);
     return () => clearTimeout(t);
-  }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [picked]); // eslint-disable-line react-hooks/exhaustive-deps -- fire once per pick
 
   return (
     <div className="flex flex-1 flex-col gap-4">

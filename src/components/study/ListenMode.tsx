@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { checkTyped } from '@/lib/grading';
@@ -15,26 +15,27 @@ interface Props {
 }
 
 const LABELS: Record<Rating, string> = { 1: 'Again', 2: 'Hard', 3: 'Good', 4: 'Easy' };
+/** Short pause so the card is on screen before the audio starts. */
+const SPEAK_DELAY_MS = 350;
 
 /** Nghe & chép: 50% nghe từ, 50% nghe cả câu ví dụ rồi gõ lại */
 export function ListenMode({ card, voice, disabled, onGrade }: Props) {
-  const fullSentence = card.examples.length > 0 && Math.random() < 0.5;
-  const target = fullSentence ? card.examples[0] : card.word;
+  // Rendered with key={card.card_id}: pick word vs. sentence once per card, not on every render
+  // (otherwise each keystroke could switch the target away from what was spoken).
+  const [fullSentence] = useState(() => card.examples.length > 0 && Math.random() < 0.5);
+  const target = fullSentence ? card.examples[0].en : card.word;
 
   const [value, setValue] = useState('');
   const [checked, setChecked] = useState<{ rating: Rating; expected: string } | null>(null);
-  const startedAt = useRef(Date.now());
+  const [startedAt] = useState(() => Date.now());
 
   useEffect(() => {
-    setValue('');
-    setChecked(null);
-    startedAt.current = Date.now();
-    const t = setTimeout(() => speak(target, voice), 350);
+    const t = setTimeout(() => speak(target, voice), SPEAK_DELAY_MS);
     return () => {
       clearTimeout(t);
       stopSpeaking();
     };
-  }, [card.card_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [target, voice]); // re-speak if the user's voice setting arrives after mount
 
   if (!ttsSupported()) {
     return (
@@ -64,7 +65,7 @@ export function ListenMode({ card, voice, disabled, onGrade }: Props) {
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (checked) onGrade(checked.rating, { answer: value, elapsedMs: Date.now() - startedAt.current });
+          if (checked) onGrade(checked.rating, { answer: value, elapsedMs: Date.now() - startedAt });
           else if (value.trim()) {
             setChecked({ rating: checkTyped(target, value), expected: target });
           }

@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { fetchCardPool, fetchStudyQueue, fetchTodayStats } from '@/lib/api';
+import { fetchCardPool, fetchStudyQueue, fetchTodayStats, type CardPoolItem } from '@/lib/api';
 import { STUDY_MODES, type StudyMode } from '@/types/db';
 import { StudySession } from '@/components/study/StudySession';
+
+/** Stable fallback so ChoiceMode doesn't reshuffle its options on every render while the pool loads. */
+const EMPTY_POOL: CardPoolItem[] = [];
+const MIN_CHOICE_POOL = 4;
 
 export default function StudyPage() {
   const [mode, setMode] = useState<StudyMode>('flip');
@@ -16,6 +20,8 @@ export default function StudyPage() {
   const [running, setRunning] = useState(false);
 
   const pool = useQuery({ queryKey: ['card-pool'], queryFn: fetchCardPool });
+  // Choice mode needs the answer plus 3 distractors, otherwise every card is a free "Good".
+  const choicePoolReady = (pool.data?.length ?? 0) >= MIN_CHOICE_POOL;
   const stats = useQuery({ queryKey: ['today-stats'], queryFn: fetchTodayStats, refetchInterval: 30_000 });
   const queue = useQuery({
     queryKey: ['queue-preview', topic],
@@ -38,7 +44,7 @@ export default function StudyPage() {
       <StudySession
         mode={mode}
         topic={topic}
-        pool={pool.data ?? []}
+        pool={pool.data ?? EMPTY_POOL}
         onExit={() => {
           setRunning(false);
           queue.refetch();
@@ -118,10 +124,15 @@ export default function StudyPage() {
           </div>
           <Progress value={Math.min(100, (queuePreview.length / 60) * 100)} className="h-1.5" />
 
-          <Button className="w-full" size="lg" disabled={!queue.data || queuePreview.length === 0} onClick={() => setRunning(true)}>
+          <Button className="w-full" size="lg" disabled={!queue.data || queuePreview.length === 0 || (mode === 'choice' && !choicePoolReady)} onClick={() => setRunning(true)}>
             Bắt đầu · {STUDY_MODES.find((m) => m.id === mode)?.label}
             {topic !== 'all' ? ` · ${topic}` : ' · tất cả'}
           </Button>
+          {mode === 'choice' && !choicePoolReady && !pool.isLoading && (
+            <p className="text-center text-xs text-muted-foreground">
+              {pool.isError ? 'Không tải được bộ thẻ để tạo đáp án nhiễu.' : `Cần ít nhất ${MIN_CHOICE_POOL} thẻ để chơi trắc nghiệm.`}
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
