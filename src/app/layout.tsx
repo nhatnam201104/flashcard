@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { BASE_PATH } from '@/lib/paths';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Aptis Flashcard',
   description: 'Ôn từ vựng Aptis bằng thuật toán FSRS — lật thẻ, gõ từ, trắc nghiệm, nghe, đặt câu AI chấm.',
-  manifest: '/manifest.json',
+  manifest: `${BASE_PATH}/manifest.json`,
   appleWebApp: { capable: true, title: 'Aptis Flashcard', statusBarStyle: 'default' },
 };
 

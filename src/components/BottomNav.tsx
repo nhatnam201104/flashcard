@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { BASE_PATH } from '@/lib/paths';
 
 const items = [
   { href: '/study', label: 'Ôn tập', icon: '⚡' },
@@ -35,7 +36,7 @@ export function BottomNav() {
           type="button"
           onClick={async () => {
             await getSupabaseBrowserClient().auth.signOut();
-            window.location.href = '/login';
+            window.location.href = `${BASE_PATH}/login`;
           }}
           className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >

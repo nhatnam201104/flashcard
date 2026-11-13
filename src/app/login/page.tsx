@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { BASE_PATH, safeNextPath } from '@/lib/paths';
+
+// Dev tab pre-fills local-only credentials; never ship it to the public site.
+const SHOW_DEV_LOGIN = process.env.NODE_ENV === 'development';
 
 export default function LoginPage() {
   return (
@@ -20,7 +24,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/study';
+  const next = safeNextPath(params.get('next'));
   const supabase = getSupabaseBrowserClient();
 
   const [email, setEmail] = useState('');
@@ -29,7 +33,16 @@ function LoginForm() {
   const [devEmail, setDevEmail] = useState('nam@test.local');
   const [devPassword, setDevPassword] = useState('aptis2026');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(
+    params.get('error') === 'auth' ? 'Link đăng nhập không hợp lệ hoặc đã hết hạn. Hãy dùng mã 6 số.' : null,
+  );
+
+  // Already signed in → skip the login screen (was done by middleware before).
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace(next);
+    });
+  }, [supabase, router, next]);
 
   /** Gửi email chứa mã 6 số (kèm magic link) */
   async function sendCode() {
@@ -39,7 +52,7 @@ function LoginForm() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: `${window.location.origin}${BASE_PATH}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
     setBusy(false);
@@ -87,10 +100,12 @@ function LoginForm() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="email">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="dev">Dev</TabsTrigger>
-            </TabsList>
+            {SHOW_DEV_LOGIN && (
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="dev">Dev</TabsTrigger>
+              </TabsList>
+            )}
 
             <TabsContent value="email" className="space-y-4 pt-4">
               {!codeSent ? (
@@ -141,6 +156,7 @@ function LoginForm() {
               )}
             </TabsContent>
 
+            {SHOW_DEV_LOGIN && (
             <TabsContent value="dev" className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="dev-email">Email</Label>
@@ -155,6 +171,7 @@ function LoginForm() {
                 {busy ? 'Đang vào…' : 'Vào app'}
               </Button>
             </TabsContent>
+            )}
           </Tabs>
           {message && <p className="mt-4 text-center text-sm text-muted-foreground">{message}</p>}
         </CardContent>
