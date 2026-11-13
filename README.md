@@ -72,7 +72,21 @@ supabase secrets set OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=...
 supabase functions deploy ai-gateway
 ```
 
-Frontend: đẩy repo lên GitHub → import Vercel → điền `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+### Frontend — GitHub Pages
+
+App build dạng **static export** (`output: 'export'`) — không có server Next.js: chặn đăng nhập chạy ở client ([AuthGuard](src/components/AuthGuard.tsx)), dữ liệu được bảo vệ bằng RLS của Supabase.
+
+Workflow [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) tự build + deploy mỗi lần push lên `main`. Cài đặt một lần:
+
+1. GitHub repo → **Settings → Pages → Source: GitHub Actions**.
+2. **Settings → Secrets and variables → Actions → Variables**: thêm `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (key public, vẫn an toàn nhờ RLS).
+3. Supabase Dashboard → **Authentication → URL Configuration**: Site URL = `https://<user>.github.io/<repo>/`, thêm Redirect URL `https://<user>.github.io/<repo>/**`.
+
+Build thử local giống CI (Git Bash cần `MSYS_NO_PATHCONV=1` để không đổi `/flashcard` thành đường dẫn Windows):
+
+```bash
+MSYS_NO_PATHCONV=1 NEXT_PUBLIC_BASE_PATH=/flashcard npx next build   # → out/
+```
 
 ## Lộ trình (giai đoạn 2)
 
