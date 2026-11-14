@@ -22,16 +22,19 @@ jobs:
       # Site lives at https://<user>.github.io/<repo>/
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
       # Public by design (browser-side keys, data guarded by RLS). Set them in
-      # Settings → Secrets and variables → Actions → Variables.
-      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # Settings → Secrets and variables → Actions, at REPOSITORY level, either
+      # tab works (Variables or Secrets). Environment-scoped values are not
+      # visible here because this job has no `environment:`.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Check Supabase variables
         run: |
           if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
-            echo "::error::Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY as repository variables."
+            [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] && echo "::error::Missing NEXT_PUBLIC_SUPABASE_URL (repository-level Variable or Secret)."
+            [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo "::error::Missing NEXT_PUBLIC_SUPABASE_ANON_KEY (repository-level Variable or Secret)."
             exit 1
           fi
 
